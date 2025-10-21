@@ -699,8 +699,9 @@ ifeq ($(CFG_SOC_NAME), 5)
 	$(Q)rm -f $(BIN_DIR)/bk7231_bsp.bin
 	$(Q)cp $(BIN_DIR)/bsp_enc.bin $(BIN_DIR)/bk7231_bsp.bin
 	$(Q)(cd ./tools/beken_packager; $(ECHO) "  $(GREEN)PACK $(CFG_SOC_NAME_STR) (uascent)$(NC)"; if [ "$(Q)" = "@" ]; then python ./beken_packager_wrapper -i 11 -s $(CFG_FLASH_SELECTION_TYPE); else python ./beken_packager_wrapper -i 11 -s $(CFG_FLASH_SELECTION_TYPE); fi)
-	$(Q)mv $(BIN_DIR)/bk7231_bsp_uart_2M.1220.bin $(BIN_DIR)/$(CFG_SOC_NAME_STR)_uascent_QIO.bin
-	$(Q)mv $(BIN_DIR)/all_2M.1220.bin $(BIN_DIR)/$(CFG_SOC_NAME_STR)_uascent_UA.bin
+	$(Q)mv ./tools/beken_packager/bk7231_bsp_uart_2M.1220.bin $(BIN_DIR)/$(CFG_SOC_NAME_STR)_uascent_QIO.bin
+	$(Q)mv ./tools/beken_packager/all_2M.1220.bin $(BIN_DIR)/$(CFG_SOC_NAME_STR)_uascent_UA.bin
+
 endif
 
 ifeq ("${CFG_SUPPORT_RTOS}", "4")
