@@ -30,7 +30,7 @@ else ifeq ($(findstring CYGWIN, $(OS)), CYGWIN)
 ENCRYPT = "./tools/crc_binary/encrypt.exe"
 else ifeq ($(findstring Darwin, $(OS)), Darwin) 
 ENCRYPT = "./tools/crc_binary/encrypt.darwin"
-ENCRYPT_ARGS = 0 0 0 0
+ENCRYPT_ARGS = 4862379A 8612784B 85C5E258 75754528
 else
 ENCRYPT = "./tools/crc_binary/encrypt_n"
 endif
@@ -42,19 +42,19 @@ endif
 -include .config
 
 ifeq ($(CFG_SOC_NAME), 7)
-ENCRYPT_ARGS = 0 0 0 0 0
+ENCRYPT_ARGS = 4862379A 8612784B 85C5E258 75754528
 else ifeq ($(CFG_SOC_NAME), 2)
 ifeq ($(SOC_BK7231T), 1)
-ENCRYPT_ARGS = 510fb093 a3cbeadc 5993a17e c7adeb03 10000
+ENCRYPT_ARGS = 4862379A 8612784B 85C5E258 75754528 10000
 else
-ENCRYPT_ARGS = 0 0 0 0 0
+ENCRYPT_ARGS = 4862379A 8612784B 85C5E258 75754528
 endif
 else ifeq ($(CFG_SOC_NAME), 3)
-ENCRYPT_ARGS = 0 0 0 0 0
+ENCRYPT_ARGS = 4862379A 8612784B 85C5E258 75754528
 else ifeq ($(CFG_SOC_NAME), 8)
-ENCRYPT_ARGS = 0 0 0 0 0
+ENCRYPT_ARGS = 4862379A 8612784B 85C5E258 75754528
 else
-ENCRYPT_ARGS = 510fb093 a3cbeadc 5993a17e c7adeb03 10000
+ENCRYPT_ARGS = 4862379A 8612784B 85C5E258 75754528 10000
 endif
 
 CFG_SUPPORT_MATTER ?= 0
@@ -662,7 +662,7 @@ ifeq ($(CFG_SOC_NAME), 5)
 	$(ENCRYPT) $(BIN_DIR)/bsp.bin 0 0 0 0 0
 endif
 ifeq ($(CFG_SOC_NAME), 3)
-	$(ENCRYPT) $(BIN_DIR)/bsp.bin 510fb093 a3cbeadc 5993a17e c7adeb03 10000
+	$(ENCRYPT) $(BIN_DIR)/bsp.bin 4862379A 8612784B 85C5E258 75754528 10000
 endif
 	$(Q)cp $(BIN_DIR)/bk7231_bsp_enc.bin $(BIN_DIR)/bk7231_bsp.bin
 
