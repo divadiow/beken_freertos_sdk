@@ -53,8 +53,6 @@ else ifeq ($(CFG_SOC_NAME), 3)
 ENCRYPT_ARGS = 0 0 0 0 0
 else ifeq ($(CFG_SOC_NAME), 8)
 ENCRYPT_ARGS = 0 0 0 0 0
-else ifeq ($(CFG_SOC_NAME), 11)
-ENCRYPT_ARGS = 4862379A 8612784B 85C5E258 75754528 10000
 else
 ENCRYPT_ARGS = 510fb093 a3cbeadc 5993a17e c7adeb03 10000
 endif
@@ -697,6 +695,7 @@ ifeq ($(CFG_SOC_NAME), 3)
 endif
 ifeq ($(CFG_SOC_NAME), 5)
 	$(Q)rm -f $(BIN_DIR)/bk7231_bsp.bin
+	$(ENCRYPT) $(BIN_DIR)/bsp.bin 4862379A 8612784B 85C5E258 75754528 10000
 	$(Q)cp $(BIN_DIR)/bsp_enc.bin $(BIN_DIR)/bk7231_bsp.bin
 	$(Q)(cd ./tools/beken_packager; $(ECHO) "  $(GREEN)PACK $(CFG_SOC_NAME_STR) (uascent)$(NC)"; if [ "$(Q)" = "@" ]; then python ./beken_packager_wrapper -i 11 -s $(CFG_FLASH_SELECTION_TYPE); else python ./beken_packager_wrapper -i 11 -s $(CFG_FLASH_SELECTION_TYPE); fi)
 	$(Q)mv $(BIN_DIR)/bk7231n_uascent_2M.1220.bin          $(BIN_DIR)/$(CFG_SOC_NAME_STR)_uascent_QIO.bin
