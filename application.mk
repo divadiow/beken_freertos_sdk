@@ -696,13 +696,11 @@ ifeq ($(CFG_SOC_NAME), 3)
 	$(Q)mv $(BIN_DIR)/bk7252_tuya_bsp_uart_2M.1220.bin $(BIN_DIR)/$(CFG_SOC_NAME_STR)_Tuya_UA.bin
 endif
 ifeq ($(CFG_SOC_NAME), 11)
-	# use the freshly encrypted image as the app input to the packager
 	$(Q)rm -f $(BIN_DIR)/bk7231_bsp.bin
 	$(Q)cp $(BIN_DIR)/bsp_enc.bin $(BIN_DIR)/bk7231_bsp.bin
 	$(Q)(cd ./tools/beken_packager; $(ECHO) "  $(GREEN)PACK $(CFG_SOC_NAME_STR) (uascent)$(NC)"; if [ "$(Q)" = "@" ]; then python ./beken_packager_wrapper -i 11 -s $(CFG_FLASH_SELECTION_TYPE); else python ./beken_packager_wrapper -i 11 -s $(CFG_FLASH_SELECTION_TYPE); fi)
-	# rename outputs to match your scheme (same pattern as the Tuya case)
-	$(Q)mv $(BIN_DIR)/bk7231n_uascent_2M.1220.bin $(BIN_DIR)/$(CFG_SOC_NAME_STR)_Uascent_QIO.bin
-	$(Q)mv $(BIN_DIR)/bk7231n_uascent_bsp_uart_2M.1220.bin $(BIN_DIR)/$(CFG_SOC_NAME_STR)_Uascent_UA.bin
+	$(Q)mv $(BIN_DIR)/bk7231n_uascent_2M.1220.bin $(BIN_DIR)/$(CFG_SOC_NAME_STR)_uascent_QIO.bin
+	$(Q)mv $(BIN_DIR)/bk7231n_uascent_bsp_uart_2M.1220.bin $(BIN_DIR)/$(CFG_SOC_NAME_STR)_uascent_UA.bin
 endif
 
 ifeq ("${CFG_SUPPORT_RTOS}", "4")
