@@ -64,6 +64,13 @@ typedef enum
     BK_PARTITION_MAX,
 } bk_partition_t;
 
+typedef enum
+{
+    BK_FLASH_BOOT_PROFILE_UNKNOWN = 0,
+    BK_FLASH_BOOT_PROFILE_STANDARD,
+    BK_FLASH_BOOT_PROFILE_TUYA_T1,
+} bk_flash_boot_profile_t;
+
 /******************************************************
  *                 Type Definitions
  ******************************************************/
@@ -196,7 +203,10 @@ OSStatus BkFlashDisableSecurity( bk_partition_t partition, uint32_t off_set, uin
 #endif
 
 
+int hal_flash_lock(void);
+int hal_flash_unlock(void);
 int hal_flash_init(void);
+bk_flash_boot_profile_t bk_flash_get_boot_profile(void);
 uint32_t bk_flash_read_otp(uint32_t off_set, uint8_t *out_buf, uint32_t buf_len);
 
 

@@ -36,6 +36,117 @@
 
 static beken_mutex_t hal_flash_mutex;
 const bk_logic_partition_t *bk7231_partitions;
+static bk_flash_boot_profile_t bk_flash_boot_profile = BK_FLASH_BOOT_PROFILE_UNKNOWN;
+
+#if (CFG_SOC_NAME == SOC_BK7238)
+static UINT32 bk_flash_crc32_byte(UINT32 crc, UINT8 value)
+{
+	UINT32 bit;
+
+	crc ^= value;
+	for (bit = 0; bit < 8; bit++)
+	{
+		crc = (crc >> 1) ^ ((crc & 1) ? 0xEDB88320U : 0);
+	}
+	return crc;
+}
+
+static int bk_flash_match_signature_byte(UINT8 value, const char *signature, UINT32 signature_len, UINT32 *matched)
+{
+    if (value == (UINT8)signature[*matched])
+    {
+        (*matched)++;
+        if (*matched == signature_len)
+        {
+            return 1;
+        }
+    }
+    else
+    {
+        *matched = (value == (UINT8)signature[0]) ? 1 : 0;
+    }
+
+    return 0;
+}
+
+static bk_flash_boot_profile_t bk_flash_detect_bk7238_boot_profile(void)
+{
+    static const char tuya_signature_a[] = "diff2ya_header";
+    static const char tuya_signature_b[] = "xz_init";
+    static const char standard_signature_a[] = "RT-Thread OTA package";
+    static const char standard_signature_b[] = "ota_erase_dl_rbl";
+    UINT8 buffer[128];
+    UINT32 offset;
+    UINT32 i;
+    UINT32 tuya_a_matched = 0;
+    UINT32 tuya_b_matched = 0;
+    UINT32 standard_a_matched = 0;
+    UINT32 standard_b_matched = 0;
+    int tuya_a_found = 0;
+    int tuya_b_found = 0;
+    int standard_a_found = 0;
+    int standard_b_found = 0;
+    UINT32 physical_crc = 0xFFFFFFFFU;
+
+    for (offset = 0; offset < 0x11000; offset += sizeof(buffer))
+    {
+        if (flash_read((char *)buffer, sizeof(buffer), offset) != FLASH_SUCCESS)
+        {
+            return BK_FLASH_BOOT_PROFILE_UNKNOWN;
+        }
+
+        for (i = 0; i < sizeof(buffer); i++)
+        {
+            physical_crc = bk_flash_crc32_byte(physical_crc, buffer[i]);
+            if (((offset + i) % 34) >= 32)
+            {
+                continue;
+            }
+            if (!tuya_a_found)
+            {
+                tuya_a_found = bk_flash_match_signature_byte(buffer[i], tuya_signature_a,
+                    sizeof(tuya_signature_a) - 1, &tuya_a_matched);
+            }
+            if (!tuya_b_found)
+            {
+                tuya_b_found = bk_flash_match_signature_byte(buffer[i], tuya_signature_b,
+                    sizeof(tuya_signature_b) - 1, &tuya_b_matched);
+            }
+            if (!standard_a_found)
+            {
+                standard_a_found = bk_flash_match_signature_byte(buffer[i], standard_signature_a,
+                    sizeof(standard_signature_a) - 1, &standard_a_matched);
+            }
+            if (!standard_b_found)
+            {
+                standard_b_found = bk_flash_match_signature_byte(buffer[i], standard_signature_b,
+                    sizeof(standard_signature_b) - 1, &standard_b_matched);
+            }
+        }
+    }
+
+    physical_crc ^= 0xFFFFFFFFU;
+    if (physical_crc == 0x86902844U)
+    {
+        return BK_FLASH_BOOT_PROFILE_TUYA_T1;
+    }
+    if (physical_crc == 0x526E0069U || physical_crc == 0x88B4D0B0U)
+    {
+        return BK_FLASH_BOOT_PROFILE_STANDARD;
+    }
+
+    if (tuya_a_found && tuya_b_found && !(standard_a_found && standard_b_found))
+    {
+        return BK_FLASH_BOOT_PROFILE_TUYA_T1;
+    }
+    if (standard_a_found && standard_b_found && !(tuya_a_found && tuya_b_found))
+    {
+        return BK_FLASH_BOOT_PROFILE_STANDARD;
+    }
+
+    return BK_FLASH_BOOT_PROFILE_UNKNOWN;
+}
+#endif
 
 /* Logic partition on flash devices */
 #if (CFG_FLASH_SELECTION_TYPE == FLASH_SELECTION_TYPE_1M) || (CFG_FLASH_SELECTION_TYPE == FLASH_SELECTION_TYPE_DYNAMIC)
@@ -373,6 +484,15 @@ OSStatus bk_flash_erase(bk_partition_t inPartition, uint32_t off_set, uint32_t s
         os_printf("%s partiion not found\r\n", __FUNCTION__);
         return kNotFoundErr;
     }
+#if (CFG_SOC_NAME == SOC_BK7238)
+    if (bk_flash_boot_profile == BK_FLASH_BOOT_PROFILE_UNKNOWN &&
+        (inPartition == BK_PARTITION_OTA || inPartition == BK_PARTITION_RF_FIRMWARE ||
+        inPartition == BK_PARTITION_NET_PARAM))
+    {
+        os_printf("%s blocked for unknown BK7238 flash profile\r\n", __FUNCTION__);
+        return kPermissionErr;
+    }
+#endif
     start_addr = partition_info->partition_start_addr + off_set;
 
     return bk_flash_abs_addr_erase(start_addr, size);
@@ -395,6 +515,15 @@ OSStatus bk_flash_write( bk_partition_t inPartition, volatile uint32_t off_set, 
         os_printf("%s partiion not found\r\n", __FUNCTION__);
         return kNotFoundErr;
     }
+#if (CFG_SOC_NAME == SOC_BK7238)
+    if (bk_flash_boot_profile == BK_FLASH_BOOT_PROFILE_UNKNOWN &&
+        (inPartition == BK_PARTITION_OTA || inPartition == BK_PARTITION_RF_FIRMWARE ||
+        inPartition == BK_PARTITION_NET_PARAM))
+    {
+        os_printf("%s blocked for unknown BK7238 flash profile\r\n", __FUNCTION__);
+        return kPermissionErr;
+    }
+#endif
 
     start_addr = partition_info->partition_start_addr + off_set;
 
@@ -705,14 +834,50 @@ int hal_flash_unlock(void)
 	return kNoErr;
 }
 
+bk_flash_boot_profile_t bk_flash_get_boot_profile(void)
+{
+	return bk_flash_boot_profile;
+}
+
 int hal_flash_init(void)
 {
 	int ret = 0;
+	bk_flash_boot_profile = BK_FLASH_BOOT_PROFILE_STANDARD;
 
 #if (CFG_FLASH_SELECTION_TYPE == FLASH_SELECTION_TYPE_1M)
 	bk7231_partitions = bk7231_partitions_1M;
 #elif (CFG_FLASH_SELECTION_TYPE == FLASH_SELECTION_TYPE_2M)
+	#if (CFG_SOC_NAME == SOC_BK7238)
+	{
+		static bk_logic_partition_t bk7238_tuya_partitions_2M[BK_PARTITION_MAX];
+
+		bk_flash_boot_profile = bk_flash_detect_bk7238_boot_profile();
+		if (bk_flash_boot_profile == BK_FLASH_BOOT_PROFILE_TUYA_T1)
+		{
+			os_memcpy(bk7238_tuya_partitions_2M, bk7231_partitions_2M, sizeof(bk7238_tuya_partitions_2M));
+			bk7238_tuya_partitions_2M[BK_PARTITION_BOOTLOADER].partition_length = 0x11000;
+			bk7238_tuya_partitions_2M[BK_PARTITION_OTA].partition_length = 0xAF000;
+			bk7238_tuya_partitions_2M[BK_PARTITION_RF_FIRMWARE].partition_start_addr = 0x1E3000;
+			bk7238_tuya_partitions_2M[BK_PARTITION_NET_PARAM].partition_start_addr = 0x1F1000;
+			bk7231_partitions = bk7238_tuya_partitions_2M;
+			os_printf("BK7238 flash profile: Tuya T1 (PCZL OTA)\r\n");
+		}
+		else
+		{
+			bk7231_partitions = bk7231_partitions_2M;
+			if (bk_flash_boot_profile == BK_FLASH_BOOT_PROFILE_STANDARD)
+			{
+				os_printf("BK7238 flash profile: standard Beken (RBL OTA)\r\n");
+			}
+			else
+			{
+				os_printf("BK7238 flash profile: unknown; OTA and profile-specific writes disabled\r\n");
+			}
+		}
+	}
+	#else
 	bk7231_partitions = bk7231_partitions_2M;
+	#endif
 #elif (CFG_FLASH_SELECTION_TYPE == FLASH_SELECTION_TYPE_4M)
 	bk7231_partitions = bk7231_partitions_4M;
 #elif (CFG_FLASH_SELECTION_TYPE == FLASH_SELECTION_TYPE_8M)
