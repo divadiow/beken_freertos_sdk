@@ -332,9 +332,9 @@
 #endif
 
 /*section 25 ----- use audio*/
-#define CFG_USE_AUDIO                              0
+#define CFG_USE_AUDIO                              1
 #define CFG_USE_AUD_DAC                            0
-#define CFG_USE_AUD_ADC                            0
+#define CFG_USE_AUD_ADC                            1
 
 /*section 25 ----- use tick time calibrate*/
 #define CFG_USE_TICK_CAL                           1
@@ -466,6 +466,6 @@
 #define CFG_USE_SOFT_RTC                           1
 #endif // (AT_SERVICE_CFG)
 
-#define CFG_USE_CHARGE_DEV                         0
+#define CFG_USE_CHARGE_DEV                         1
 
 #endif // _SYS_CONFIG_H_
